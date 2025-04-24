@@ -1,0 +1,6 @@
+﻿[alias]
+xtask = "run --package xtask --release --"
+debug = "run --package xtask --"
+setup = "xtask setup"
+learn = "xtask learn"
+eval = "xtask eval"

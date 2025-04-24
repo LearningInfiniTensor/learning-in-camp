@@ -1,0 +1,4 @@
+[workspace]
+members = ["environment", "course", "xtask"]
+resolver = "3"
+package.edition = "2024"
