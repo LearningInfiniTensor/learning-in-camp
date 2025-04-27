@@ -148,7 +148,9 @@ pub fn install_env(env: &str) {
                 .unwrap_or(false);
 
             if check_installed {
-                println!("\x1b[32m[xtask]\x1b[0m CUDA Toolkit is already installed. No need to reinstall.");
+                println!(
+                    "\x1b[32m[xtask]\x1b[0m CUDA Toolkit is already installed. No need to reinstall."
+                );
                 return;
             }
 
