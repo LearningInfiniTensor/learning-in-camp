@@ -1,7 +1,7 @@
 pub fn install_env(env: &str) {
     match env {
         "python" => {
-            println!("Checking if Python is already installed...");
+            println!("\x1b[32m[xtask]\x1b[0m Checking if Python is already installed...");
             // Check if python or python3 is installed
             let check_installed = if cfg!(target_os = "windows") {
                 std::process::Command::new("python")
@@ -18,11 +18,15 @@ pub fn install_env(env: &str) {
             };
 
             if check_installed {
-                println!("Python is already installed. No need to reinstall.");
+                println!(
+                    "\x1b[32m[xtask]\x1b[0m Python is already installed. No need to reinstall."
+                );
                 return;
             }
 
-            println!("Python not detected. Installing Python environment...");
+            println!(
+                "\x1b[32m[xtask]\x1b[0m Python not detected. Installing Python environment..."
+            );
 
             #[cfg(target_os = "windows")]
             let output = std::process::Command::new("powershell")
@@ -68,22 +72,29 @@ pub fn install_env(env: &str) {
                         .status()
                 } else {
                     println!(
-                        "No supported package manager found (apt-get, dnf, yum, pacman). Please install Python manually."
+                        "\x1b[32m[xtask]\x1b[0m No supported package manager found (apt-get, dnf, yum, pacman). Please install Python manually."
                     );
                     return;
                 }
             };
 
             match output {
-                Ok(status) if status.success() => println!("Python installation completed!"),
-                Ok(status) => {
-                    println!("Python installation failed, exit code: {:?}", status.code())
+                Ok(status) if status.success() => {
+                    println!("\x1b[32m[xtask]\x1b[0m Python installation completed!")
                 }
-                Err(e) => println!("Error occurred while running install command: {e}"),
+                Ok(status) => {
+                    println!(
+                        "\x1b[32m[xtask]\x1b[0m Python installation failed, exit code: {:?}",
+                        status.code()
+                    )
+                }
+                Err(e) => println!(
+                    "\x1b[32m[xtask]\x1b[0m Error occurred while running install command: {e}"
+                ),
             }
         }
         "xmake" => {
-            println!("Checking if xmake is already installed...");
+            println!("\x1b[32m[xtask]\x1b[0m Checking if xmake is already installed...");
             // Check if xmake is installed
             let check_installed = std::process::Command::new("xmake")
                 .arg("--version")
@@ -92,11 +103,13 @@ pub fn install_env(env: &str) {
                 .unwrap_or(false);
 
             if check_installed {
-                println!("xmake is already installed. No need to reinstall.");
+                println!(
+                    "\x1b[32m[xtask]\x1b[0m xmake is already installed. No need to reinstall."
+                );
                 return;
             }
 
-            println!("xmake not detected. Installing xmake environment...");
+            println!("\x1b[32m[xtask]\x1b[0m xmake not detected. Installing xmake environment...");
 
             #[cfg(target_os = "windows")]
             let output = std::process::Command::new("powershell")
@@ -113,11 +126,78 @@ pub fn install_env(env: &str) {
                 .status();
 
             match output {
-                Ok(status) if status.success() => println!("xmake installation completed!"),
-                Ok(status) => println!("xmake installation failed, exit code: {:?}", status.code()),
-                Err(e) => println!("Error occurred while running install command: {e}"),
+                Ok(status) if status.success() => {
+                    println!("\x1b[32m[xtask]\x1b[0m xmake installation completed!")
+                }
+                Ok(status) => println!(
+                    "\x1b[32m[xtask]\x1b[0m xmake installation failed, exit code: {:?}",
+                    status.code()
+                ),
+                Err(e) => println!(
+                    "\x1b[32m[xtask]\x1b[0m Error occurred while running install command: {e}"
+                ),
             }
         }
-        _ => println!("Automatic installation for this environment is not supported: {env}"),
+        "cuda" => {
+            println!("\x1b[32m[xtask]\x1b[0m Checking if CUDA Toolkit is already installed...");
+            // Check if cuda toolkit is installed
+            let check_installed = std::process::Command::new("nvcc")
+                .arg("--version")
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false);
+
+            if check_installed {
+                println!("\x1b[32m[xtask]\x1b[0m CUDA Toolkit is already installed. No need to reinstall.");
+                return;
+            }
+
+            // nvidia-smi, get the highest CUDA version supported by the driver
+            let has_nvidia_smi = std::process::Command::new("nvidia-smi")
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false);
+
+            if has_nvidia_smi {
+                let output = std::process::Command::new("nvidia-smi")
+                    .output()
+                    .expect("Failed to execute nvidia-smi");
+                let smi_info = String::from_utf8_lossy(&output.stdout);
+                for line in smi_info.lines() {
+                    if line.contains("CUDA Version") {
+                        println!("\x1b[32m[xtask]\x1b[0m Detected by nvidia-smi: {line}");
+                    }
+                    if let Some(idx) = line.find("CUDA Version:") {
+                        // 提取 CUDA 版本号
+                        let version_str = line[idx + "CUDA Version:".len()..]
+                            .split_whitespace()
+                            .next()
+                            .unwrap_or("");
+                        println!(
+                            "\x1b[32m[xtask]\x1b[0m The highest CUDA version supported by your driver is {version_str}"
+                        );
+                        println!(
+                            "\x1b[32m[xtask]\x1b[0m You can also visit https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html to find the CUDA version compatible with your GPU driver."
+                        );
+                    }
+                }
+                println!(
+                    "\x1b[32m[xtask]\x1b[0m Please make sure to install a CUDA Toolkit version compatible with your driver."
+                );
+            } else {
+                println!(
+                    "\x1b[32m[xtask]\x1b[0m nvidia-smi not found. Please make sure you have an NVIDIA GPU and drivers installed."
+                );
+            }
+
+            // println!("\x1b[32m[xtask]\x1b[0m CUDA Toolkit not detected. Installing CUDA Toolkit...");
+
+            println!(
+                "\x1b[32m[xtask]\x1b[0m Please visit https://developer.nvidia.com/cuda-toolkit-archive to select and download the appropriate CUDA version for your driver."
+            );
+        }
+        _ => println!(
+            "\x1b[32m[xtask]\x1b[0m Automatic installation for this environment is not supported: {env}"
+        ),
     }
 }
