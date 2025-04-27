@@ -67,14 +67,18 @@ pub fn install_env(env: &str) {
                         .arg("brew install python")
                         .status()
                 } else {
-                    println!("No supported package manager found (apt-get, dnf, yum, pacman). Please install Python manually.");
+                    println!(
+                        "No supported package manager found (apt-get, dnf, yum, pacman). Please install Python manually."
+                    );
                     return;
                 }
             };
 
             match output {
                 Ok(status) if status.success() => println!("Python installation completed!"),
-                Ok(status) => println!("Python installation failed, exit code: {:?}", status.code()),
+                Ok(status) => {
+                    println!("Python installation failed, exit code: {:?}", status.code())
+                }
                 Err(e) => println!("Error occurred while running install command: {e}"),
             }
         }
@@ -96,7 +100,10 @@ pub fn install_env(env: &str) {
 
             #[cfg(target_os = "windows")]
             let output = std::process::Command::new("powershell")
-                .args(["-Command", "winget install -e --id Xmake-io.Xmake --source winget"])
+                .args([
+                    "-Command",
+                    "winget install -e --id Xmake-io.Xmake --source winget",
+                ])
                 .status();
 
             #[cfg(not(target_os = "windows"))]
