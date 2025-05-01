@@ -2,16 +2,20 @@ pub fn install_env(env: &str) {
     match env {
         "python" => {
             println!("\x1b[32m[xtask]\x1b[0m Checking if Python is already installed...");
+            println!();
+
             // Check if python or python3 is installed
             let check_installed = if cfg!(target_os = "windows") {
                 std::process::Command::new("python")
                     .arg("--version")
+                    .stdout(std::process::Stdio::null())
                     .status()
                     .map(|s| s.success())
                     .unwrap_or(false)
             } else {
                 std::process::Command::new("python3")
                     .arg("--version")
+                    .stdout(std::process::Stdio::null())
                     .status()
                     .map(|s| s.success())
                     .unwrap_or(false)
@@ -40,6 +44,7 @@ pub fn install_env(env: &str) {
                     std::process::Command::new("sh")
                         .arg("-c")
                         .arg(format!("command -v {}", cmd))
+                        .stdout(std::process::Stdio::null())
                         .status()
                         .map(|s| s.success())
                         .unwrap_or(false)
@@ -95,9 +100,12 @@ pub fn install_env(env: &str) {
         }
         "xmake" => {
             println!("\x1b[32m[xtask]\x1b[0m Checking if xmake is already installed...");
+            println!();
+
             // Check if xmake is installed
             let check_installed = std::process::Command::new("xmake")
                 .arg("--version")
+                .stdout(std::process::Stdio::null())
                 .status()
                 .map(|s| s.success())
                 .unwrap_or(false);
@@ -140,9 +148,12 @@ pub fn install_env(env: &str) {
         }
         "cuda" => {
             println!("\x1b[32m[xtask]\x1b[0m Checking if CUDA Toolkit is already installed...");
+            println!();
+
             // Check if cuda toolkit is installed
             let check_installed = std::process::Command::new("nvcc")
                 .arg("--version")
+                .stdout(std::process::Stdio::null())
                 .status()
                 .map(|s| s.success())
                 .unwrap_or(false);
@@ -156,6 +167,7 @@ pub fn install_env(env: &str) {
 
             // nvidia-smi, get the highest CUDA version supported by the driver
             let has_nvidia_smi = std::process::Command::new("nvidia-smi")
+                .stdout(std::process::Stdio::null())
                 .status()
                 .map(|s| s.success())
                 .unwrap_or(false);
@@ -170,7 +182,7 @@ pub fn install_env(env: &str) {
                         println!("\x1b[32m[xtask]\x1b[0m Detected by nvidia-smi: {line}");
                     }
                     if let Some(idx) = line.find("CUDA Version:") {
-                        // 提取 CUDA 版本号
+                        // extract the CUDA version number
                         let version_str = line[idx + "CUDA Version:".len()..]
                             .split_whitespace()
                             .next()
@@ -192,8 +204,7 @@ pub fn install_env(env: &str) {
                 );
             }
 
-            // println!("\x1b[32m[xtask]\x1b[0m CUDA Toolkit not detected. Installing CUDA Toolkit...");
-
+            println!();
             println!(
                 "\x1b[32m[xtask]\x1b[0m Please visit https://developer.nvidia.com/cuda-toolkit-archive to select and download the appropriate CUDA version for your driver."
             );
