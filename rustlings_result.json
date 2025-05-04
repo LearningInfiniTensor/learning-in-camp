@@ -1,0 +1,38 @@
+{
+  "exercises": [
+    {
+      "name": "main.rs",
+      "result": false
+    },
+    {
+      "name": "tensor.rs",
+      "result": false
+    },
+    {
+      "name": "model.rs",
+      "result": false
+    },
+    {
+      "name": "config.rs",
+      "result": false
+    },
+    {
+      "name": "kvcache.rs",
+      "result": false
+    },
+    {
+      "name": "params.rs",
+      "result": false
+    },
+    {
+      "name": "operators.rs",
+      "result": false
+    }
+  ],
+  "statistics": {
+    "total_exercations": 7,
+    "total_succeeds": 0,
+    "total_failures": 7,
+    "total_time": 0
+  }
+}
