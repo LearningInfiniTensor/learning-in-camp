@@ -1,10 +1,426 @@
-﻿#[derive(Args)]
+﻿use anyhow::{Context, Result};
+use clap::Args;
+use colored::*;
+use indicatif::{ProgressBar, ProgressStyle};
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::Instant;
+
+#[derive(Args)]
 pub struct EvalArgs {
     /// 要评分的课程名称，不传则自动对所有已配置课程评分
     #[clap(long)]
     course: Option<String>,
+    
+    /// 练习目录路径，默认为当前目录
+    #[clap(short, long, default_value = ".")]
+    path: PathBuf,
+    
+    /// 是否显示详细输出
+    #[clap(short, long)]
+    verbose: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ExerciseResult {
+    pub name: String,
+    pub result: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Statistics {
+    pub total_exercations: usize,
+    pub total_succeeds: usize,
+    pub total_failures: usize,
+    pub total_time: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GradeResult {
+    pub exercises: Vec<ExerciseResult>,
+    pub statistics: Statistics,
 }
 
 impl EvalArgs {
-    pub fn eval(self) {}
+    pub fn eval(self) {
+        if let Err(e) = self.run_eval() {
+            eprintln!("{} {}", "评分失败:".red().bold(), e);
+        }
+    }
+    
+    fn run_eval(&self) -> Result<()> {
+        println!("{}", "开始评测练习...".blue().bold());
+        let start_time = Instant::now();
+
+        // 根据course参数确定评测目标
+        let is_learning_lm = match &self.course {
+            Some(course) => course == "learning-lm-rs",
+            None => self.path.to_string_lossy().contains("learning-lm-rs")
+        };
+
+        let mut exercise_results = Vec::new();
+        let mut total_succeeds = 0;
+        let mut total_failures = 0;
+        let mut total_exercations = 0;
+
+        if is_learning_lm {
+            println!("{}", "评测 learning-lm-rs 项目...".blue().bold());
+            // Resolve the path relative to the CWD where cargo xtask was run
+            let absolute_path = std::env::current_dir()
+                .context("无法获取当前工作目录")?
+                .join(&self.path);
+                
+            // 根据course参数确定exercises目录
+            let exercises_dir = if absolute_path.ends_with("exercises") {
+                absolute_path.clone()
+            } else {
+                absolute_path.join("exercises")
+            };
+
+            // 如果指定了course参数，直接使用对应的目录
+            let lm_path = if let Some(course) = &self.course {
+                exercises_dir.join(course)
+            } else {
+                exercises_dir.join("learning-lm-rs")
+            };
+            if !lm_path.exists() {
+                println!("{} {}", "警告:".yellow().bold(), "找不到 exercises/learning-lm-rs 目录");
+                return Ok(());
+            }
+            
+            let manifest_path = lm_path.join("Cargo.toml");
+            if !manifest_path.exists() {
+                println!("{} {} {}", "警告:".yellow().bold(), "找不到 learning-lm-rs/Cargo.toml 文件:", manifest_path.display());
+                return Ok(());
+            }
+
+            println!("{} {}", "运行测试:".blue().bold(), "cargo test --release");
+            let test_output = Command::new("cargo")
+                .arg("test")
+                .arg("--manifest-path")
+                .arg(&manifest_path)
+                .arg("--release")
+                .current_dir(&lm_path)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()
+                .context("运行 learning-lm-rs 测试失败")?;
+
+            let success = test_output.status.success();
+
+            if self.verbose || !success {
+                println!("{}", String::from_utf8_lossy(&test_output.stdout));
+                println!("{}", String::from_utf8_lossy(&test_output.stderr));
+            }
+
+            // learning-lm-rs 只包含 model.rs 和 operators.rs
+            let lm_exercises = ["model.rs", "operators.rs"];
+            total_exercations = lm_exercises.len();
+
+            for &exercise_name in lm_exercises.iter() {
+                exercise_results.push(ExerciseResult {
+                    name: exercise_name.to_string(),
+                    result: success,
+                });
+                if success {
+                    total_succeeds += 1;
+                    println!("{} {}", "✓".green().bold(), exercise_name);
+                } else {
+                    total_failures += 1;
+                    println!("{} {}", "✗".red().bold(), exercise_name);
+                }
+            }
+            println!("评测完成!");
+
+        } else {
+            // 处理 Rustlings 或其他非 learning-lm-rs 项目
+            let exercise_files = find_exercise_files(&self.path, &self.course)?;
+            total_exercations = exercise_files.len();
+            println!("{} {} {}", "找到".blue().bold(), total_exercations, "个练习文件".blue().bold());
+
+            if total_exercations == 0 {
+                println!("{}", "未找到练习文件，评测结束。".yellow());
+                return Ok(());
+            }
+
+            let bar = ProgressBar::new(total_exercations as u64);
+            bar.set_style(
+                ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})")
+                    .unwrap()
+                    .progress_chars("##-"),
+            );
+
+            for exercise_path in exercise_files.iter() {
+                bar.inc(1);
+                let (name, result, _time) = grade_exercise(exercise_path, self.verbose)?;
+                if result {
+                    total_succeeds += 1;
+                } else {
+                    total_failures += 1;
+                }
+                exercise_results.push(ExerciseResult { name, result });
+            }
+            bar.finish_with_message("评测完成!");
+        }
+
+        let total_time = start_time.elapsed().as_secs();
+
+        // 打印统计信息
+        println!("{}", "评测结果统计".green().bold());
+        println!("{}: {}", "总练习数".blue(), total_exercations);
+        println!("{}: {}", "通过数量".green(), total_succeeds);
+        println!("{}: {}", "失败数量".red(), total_failures);
+        println!("{}: {}秒", "总耗时".blue(), total_time);
+
+        let pass_rate = if total_exercations > 0 {
+            (total_succeeds as f32 / total_exercations as f32) * 100.0
+        } else {
+            0.0
+        };
+        println!("{}: {:.2}%", "通过率".green(), pass_rate);
+
+        if total_failures > 0 {
+            println!("");
+            println!("{}", "失败的练习:".red().bold());
+            for exercise in exercise_results.iter() {
+                if !exercise.result {
+                    println!("  {}", exercise.name.red());
+                }
+            }
+        }
+
+        let result = GradeResult {
+            exercises: exercise_results,
+            statistics: Statistics {
+                total_exercations,
+                total_succeeds,
+                total_failures,
+                total_time,
+            },
+        };
+
+        let json_result = serde_json::to_string_pretty(&result)?;
+        fs::write("rustlings_result.json", json_result)?;
+        println!("");
+        println!("{}", "评测结果已保存到 rustlings_result.json".blue());
+
+        Ok(())
+    }
+}
+
+/// 查找 learning-lm-rs 项目的根目录
+fn find_learning_lm_root(start_path: &Path) -> Result<PathBuf> {
+    // First, check if the provided path exists
+    if !start_path.exists() {
+        return Err(anyhow::anyhow!("提供的路径不存在: {}", start_path.display()));
+    }
+    // Canonicalize the starting path to resolve any relative components
+    let mut current_path = start_path
+        .canonicalize()
+        .with_context(|| format!("无法规范化路径: {}", start_path.display()))?;
+    loop {
+        if current_path.join("Cargo.toml").exists() && current_path.file_name().map_or(false, |name| name == "learning-lm-rs") {
+            return Ok(current_path);
+        }
+        if let Some(parent) = current_path.parent() {
+            current_path = parent.to_path_buf();
+        } else {
+            break;
+        }
+    }
+    Err(anyhow::anyhow!("找不到 learning-lm-rs 项目根目录"))
+}
+
+/// 查找指定目录下的所有练习文件
+fn find_exercise_files(exercises_path: &Path, course: &Option<String>) -> Result<Vec<PathBuf>> {
+    let mut exercise_files = Vec::new();
+    let exercises_dir = Path::new("exercises");
+    let base_path = if exercises_path.ends_with(exercises_dir) {
+        exercises_path.to_path_buf()
+    } else {
+        exercises_path.join(exercises_dir)
+    };
+
+    // 检查exercises目录是否存在
+    if !base_path.exists() {
+        println!("{} {}", "警告:".yellow().bold(), "exercises目录不存在，请先配置课程");
+        return Ok(Vec::new());
+    }
+
+    // 根据course参数确定评测目标目录
+    let course_path = if let Some(course_name) = course {
+        base_path.join(course_name)
+    } else {
+        base_path.clone()
+    };
+
+    if !course_path.exists() {
+        println!("{} {}", "警告:".yellow().bold(), format!("找不到课程目录: {}", course_path.display()));
+        return Ok(Vec::new());
+    }
+
+    // 对于learning-lm-rs项目，只返回model.rs和operators.rs
+    if course_path.ends_with("learning-lm-rs") {
+        let src_path = course_path.join("src");
+        if src_path.exists() {
+            println!("{} {}", "找到learning-lm-rs项目:".blue().bold(), src_path.display());
+            let model_path = src_path.join("model.rs");
+            let operators_path = src_path.join("operators.rs");
+            
+            if model_path.exists() {
+                println!("{} {}", "找到练习文件:".blue(), model_path.display());
+                exercise_files.push(model_path);
+            } else {
+                println!("{} {}", "警告:".yellow().bold(), "找不到model.rs文件");
+            }
+            
+            if operators_path.exists() {
+                println!("{} {}", "找到练习文件:".blue(), operators_path.display());
+                exercise_files.push(operators_path);
+            } else {
+                println!("{} {}", "警告:".yellow().bold(), "找不到operators.rs文件");
+            }
+            
+            return Ok(exercise_files);
+        }
+    }
+
+    // 对于rustlings项目，只查找exercises目录下的文件
+    if course_path.ends_with("rustlings") {
+        let exercises_path = course_path.join("exercises");
+        if !exercises_path.exists() {
+            println!("{} {}", "警告:".yellow().bold(), "找不到rustlings的exercises目录");
+            return Ok(Vec::new());
+        }
+
+        for entry in walkdir::WalkDir::new(&exercises_path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let path = entry.path();
+            if path.is_file() && path.extension().map_or(false, |ext| ext == "rs") {
+                let file_name = path.file_name().unwrap().to_string_lossy();
+                if !file_name.starts_with("test_") && !file_name.starts_with("helper_") {
+                    exercise_files.push(path.to_path_buf());
+                }
+            }
+        }
+    } else {
+        // 对于其他项目，遍历目录查找练习文件
+        for entry in walkdir::WalkDir::new(&course_path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let path = entry.path();
+            if path.components().any(|c| c.as_os_str() == "target") {
+                continue;
+            }
+            if path.is_file() && path.extension().map_or(false, |ext| ext == "rs") {
+                let file_name = path.file_name().unwrap().to_string_lossy();
+                if !file_name.starts_with("test_") && !file_name.starts_with("helper_") {
+                    exercise_files.push(path.to_path_buf());
+                }
+            }
+        }
+    }
+
+    Ok(exercise_files)
+}
+
+/// 评测单个 Rustlings 练习文件 (不再处理 learning-lm-rs)
+fn grade_exercise(exercise_path: &Path, verbose: bool) -> Result<(String, bool, u64)> {
+    let start = Instant::now();
+    let exercise_name = exercise_path
+        .file_name()
+        .context("无法获取文件名")?
+        .to_string_lossy()
+        .to_string();
+
+    println!("{} {}", "评测练习:".blue().bold(), exercise_name);
+
+    let is_learning_lm = exercise_path.to_string_lossy().contains("learning-lm-rs");
+
+    let test_output = if is_learning_lm {
+        // 对于learning-lm-rs项目，需要找到项目根目录
+        // 获取绝对路径，确保能找到正确的Cargo.toml
+        let absolute_path = std::env::current_dir()
+            .context("无法获取当前工作目录")?
+            .join(exercise_path)
+            .canonicalize()
+            .context("无法获取练习文件的绝对路径")?;
+        
+        // 从练习文件路径向上查找，直到找到learning-lm-rs目录
+        let mut project_root = absolute_path.clone();
+        while !project_root.file_name().map_or(false, |name| name == "learning-lm-rs") {
+            project_root = project_root.parent().context("找不到learning-lm-rs项目根目录")?.to_path_buf();
+        }
+        
+        let manifest_path = project_root.join("Cargo.toml");
+        if !manifest_path.exists() {
+            return Err(anyhow::anyhow!("找不到learning-lm-rs的Cargo.toml文件: {}", manifest_path.display()));
+        }
+        
+        Command::new("cargo")
+            .arg("test")
+            .arg("--manifest-path")
+            .arg(&manifest_path)
+            .arg("--package")
+            .arg("learning-lm-rust")
+            .current_dir(&project_root)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .context(format!("运行练习 {} 失败", exercise_name))?
+    } else {
+        // 对于rustlings练习，直接使用rustc编译和运行测试
+        Command::new("rustc")
+            .arg(exercise_path)
+            .arg("--test")
+            .arg("-o")
+            .arg(format!("target/debug/{}", exercise_name))
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .context(format!("编译练习 {} 失败", exercise_name))?
+    };
+
+    let success = test_output.status.success();
+
+    if !success {
+        if verbose {
+            println!("{}", String::from_utf8_lossy(&test_output.stdout));
+            println!("{}", String::from_utf8_lossy(&test_output.stderr));
+        }
+        println!("{} {}", "✗".red().bold(), exercise_name);
+        return Ok((exercise_name, false, start.elapsed().as_secs()));
+    }
+
+    // 如果是rustlings练习且编译成功，运行测试
+    if !is_learning_lm {
+        let test_output = Command::new(format!("target/debug/{}", exercise_name))
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .context(format!("运行练习 {} 失败", exercise_name))?;
+
+        let success = test_output.status.success();
+
+        if verbose || !success {
+            println!("{}", String::from_utf8_lossy(&test_output.stdout));
+            println!("{}", String::from_utf8_lossy(&test_output.stderr));
+        }
+
+        if success {
+            println!("{} {}", "✓".green().bold(), exercise_name);
+        } else {
+            println!("{} {}", "✗".red().bold(), exercise_name);
+        }
+
+        return Ok((exercise_name, success, start.elapsed().as_secs()));
+    }
+
+    println!("{} {}", "✓".green().bold(), exercise_name);
+    Ok((exercise_name, true, start.elapsed().as_secs()))
 }

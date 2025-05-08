@@ -1,0 +1,386 @@
+{
+  "exercises": [
+    {
+      "name": "strings4.rs",
+      "result": true
+    },
+    {
+      "name": "strings1.rs",
+      "result": true
+    },
+    {
+      "name": "strings3.rs",
+      "result": true
+    },
+    {
+      "name": "strings2.rs",
+      "result": true
+    },
+    {
+      "name": "primitive_types4.rs",
+      "result": true
+    },
+    {
+      "name": "primitive_types5.rs",
+      "result": true
+    },
+    {
+      "name": "primitive_types3.rs",
+      "result": true
+    },
+    {
+      "name": "primitive_types6.rs",
+      "result": true
+    },
+    {
+      "name": "primitive_types2.rs",
+      "result": true
+    },
+    {
+      "name": "primitive_types1.rs",
+      "result": true
+    },
+    {
+      "name": "using_as.rs",
+      "result": true
+    },
+    {
+      "name": "from_into.rs",
+      "result": true
+    },
+    {
+      "name": "from_str.rs",
+      "result": true
+    },
+    {
+      "name": "try_from_into.rs",
+      "result": true
+    },
+    {
+      "name": "as_ref_mut.rs",
+      "result": true
+    },
+    {
+      "name": "lifetimes2.rs",
+      "result": true
+    },
+    {
+      "name": "lifetimes1.rs",
+      "result": true
+    },
+    {
+      "name": "lifetimes3.rs",
+      "result": true
+    },
+    {
+      "name": "modules2.rs",
+      "result": true
+    },
+    {
+      "name": "modules1.rs",
+      "result": true
+    },
+    {
+      "name": "modules3.rs",
+      "result": true
+    },
+    {
+      "name": "iterators3.rs",
+      "result": false
+    },
+    {
+      "name": "iterators5.rs",
+      "result": true
+    },
+    {
+      "name": "iterators1.rs",
+      "result": true
+    },
+    {
+      "name": "iterators4.rs",
+      "result": true
+    },
+    {
+      "name": "iterators2.rs",
+      "result": true
+    },
+    {
+      "name": "enums1.rs",
+      "result": true
+    },
+    {
+      "name": "enums3.rs",
+      "result": true
+    },
+    {
+      "name": "enums2.rs",
+      "result": true
+    },
+    {
+      "name": "traits2.rs",
+      "result": true
+    },
+    {
+      "name": "traits5.rs",
+      "result": true
+    },
+    {
+      "name": "traits4.rs",
+      "result": true
+    },
+    {
+      "name": "traits1.rs",
+      "result": true
+    },
+    {
+      "name": "traits3.rs",
+      "result": true
+    },
+    {
+      "name": "if2.rs",
+      "result": true
+    },
+    {
+      "name": "if1.rs",
+      "result": true
+    },
+    {
+      "name": "if3.rs",
+      "result": true
+    },
+    {
+      "name": "variables4.rs",
+      "result": true
+    },
+    {
+      "name": "variables2.rs",
+      "result": true
+    },
+    {
+      "name": "variables1.rs",
+      "result": true
+    },
+    {
+      "name": "variables5.rs",
+      "result": true
+    },
+    {
+      "name": "variables6.rs",
+      "result": true
+    },
+    {
+      "name": "variables3.rs",
+      "result": true
+    },
+    {
+      "name": "errors3.rs",
+      "result": true
+    },
+    {
+      "name": "errors2.rs",
+      "result": true
+    },
+    {
+      "name": "errors4.rs",
+      "result": true
+    },
+    {
+      "name": "errors1.rs",
+      "result": true
+    },
+    {
+      "name": "errors6.rs",
+      "result": true
+    },
+    {
+      "name": "errors5.rs",
+      "result": true
+    },
+    {
+      "name": "intro2.rs",
+      "result": true
+    },
+    {
+      "name": "intro1.rs",
+      "result": true
+    },
+    {
+      "name": "arc1.rs",
+      "result": true
+    },
+    {
+      "name": "rc1.rs",
+      "result": true
+    },
+    {
+      "name": "box1.rs",
+      "result": true
+    },
+    {
+      "name": "cow1.rs",
+      "result": true
+    },
+    {
+      "name": "functions4.rs",
+      "result": true
+    },
+    {
+      "name": "functions5.rs",
+      "result": true
+    },
+    {
+      "name": "functions3.rs",
+      "result": true
+    },
+    {
+      "name": "functions1.rs",
+      "result": true
+    },
+    {
+      "name": "functions2.rs",
+      "result": true
+    },
+    {
+      "name": "move_semantics2.rs",
+      "result": true
+    },
+    {
+      "name": "move_semantics5.rs",
+      "result": true
+    },
+    {
+      "name": "move_semantics4.rs",
+      "result": true
+    },
+    {
+      "name": "move_semantics1.rs",
+      "result": true
+    },
+    {
+      "name": "move_semantics3.rs",
+      "result": true
+    },
+    {
+      "name": "macros1.rs",
+      "result": true
+    },
+    {
+      "name": "macros2.rs",
+      "result": true
+    },
+    {
+      "name": "macros3.rs",
+      "result": true
+    },
+    {
+      "name": "macros4.rs",
+      "result": true
+    },
+    {
+      "name": "threads2.rs",
+      "result": true
+    },
+    {
+      "name": "threads1.rs",
+      "result": true
+    },
+    {
+      "name": "threads3.rs",
+      "result": false
+    },
+    {
+      "name": "tests2.rs",
+      "result": true
+    },
+    {
+      "name": "tests1.rs",
+      "result": true
+    },
+    {
+      "name": "tests3.rs",
+      "result": true
+    },
+    {
+      "name": "quiz2.rs",
+      "result": true
+    },
+    {
+      "name": "quiz3.rs",
+      "result": true
+    },
+    {
+      "name": "quiz1.rs",
+      "result": true
+    },
+    {
+      "name": "clippy3.rs",
+      "result": true
+    },
+    {
+      "name": "clippy2.rs",
+      "result": true
+    },
+    {
+      "name": "clippy1.rs",
+      "result": true
+    },
+    {
+      "name": "hashmaps1.rs",
+      "result": true
+    },
+    {
+      "name": "hashmaps3.rs",
+      "result": true
+    },
+    {
+      "name": "hashmaps2.rs",
+      "result": false
+    },
+    {
+      "name": "options3.rs",
+      "result": true
+    },
+    {
+      "name": "options2.rs",
+      "result": true
+    },
+    {
+      "name": "options1.rs",
+      "result": true
+    },
+    {
+      "name": "structs1.rs",
+      "result": true
+    },
+    {
+      "name": "structs3.rs",
+      "result": true
+    },
+    {
+      "name": "structs2.rs",
+      "result": true
+    },
+    {
+      "name": "vecs1.rs",
+      "result": true
+    },
+    {
+      "name": "vecs2.rs",
+      "result": true
+    },
+    {
+      "name": "generics2.rs",
+      "result": true
+    },
+    {
+      "name": "generics1.rs",
+      "result": true
+    }
+  ],
+  "statistics": {
+    "total_exercations": 94,
+    "total_succeeds": 91,
+    "total_failures": 3,
+    "total_time": 25
+  }
+}
