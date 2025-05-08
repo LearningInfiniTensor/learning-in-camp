@@ -36,3 +36,21 @@ Options:
   -h, --help     Print help
   -V, --version  Print version
 ```
+### 配置课程
+```bash
+# 配置 learning-lm-rs 课程
+cargo xtask learn learning-lm-rs --submodule https://github.com/LearningInfiniTensor/learning-lm-rs.git
+
+# 配置 rustlings 课程
+cargo xtask learn rustlings --submodule https://github.com/rust-lang/rustlings.git
+
+# 评测 learning-lm-rs 课程
+cargo xtask eval --course learning-lm-rs --path exercises/learning-lm-rs
+
+# 评测 rustlings 课程 
+cargo xtask eval --course rustlings --path exercises/rustlings
+
+# 带详细输出的评测（适用于任意课程）
+cargo xtask eval --course <课程名> --verbose
+
+```
