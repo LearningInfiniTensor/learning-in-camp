@@ -1,6 +1,6 @@
 pub fn install_env(env: &str) {
     match env {
-        "python" => {
+        "Python" => {
             println!("\x1b[32m[xtask]\x1b[0m Checking if Python is already installed...");
             println!();
 
@@ -146,7 +146,7 @@ pub fn install_env(env: &str) {
                 ),
             }
         }
-        "cuda" => {
+        "CUDA" => {
             println!("\x1b[32m[xtask]\x1b[0m Checking if CUDA Toolkit is already installed...");
             println!();
 
