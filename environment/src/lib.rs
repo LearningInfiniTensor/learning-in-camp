@@ -407,7 +407,6 @@ pub fn install_env(env: &str) {
                     println!(
                         "\x1b[31m[xtask]\x1b[0m Unsupported package manager. Please install OpenCL manually."
                     );
-                    return;
                 }
             }
         }
