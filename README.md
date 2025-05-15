@@ -44,6 +44,8 @@ cargo xtask learn learning-lm-rs --submodule https://github.com/LearningInfiniTe
 # 配置 rustlings 课程
 cargo xtask learn rustlings --submodule https://github.com/rust-lang/rustlings.git
 
+cargo xtask learn learning-cxx --submodule
+
 # 评测 learning-lm-rs 课程
 cargo xtask eval --course learning-lm-rs --path exercises/learning-lm-rs
 
