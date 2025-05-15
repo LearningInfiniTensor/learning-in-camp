@@ -20,7 +20,7 @@ pub fn install_env(env: &str) {
     match env {
         "Python" => {
             Logger::info("Checking if Python is already installed...");
-            println!("");
+            println!();
 
             // Check if python or python3 is installed
             let check_installed = if cfg!(target_os = "windows") {
@@ -110,7 +110,7 @@ pub fn install_env(env: &str) {
         }
         "xmake" => {
             Logger::info("Checking if xmake is already installed...");
-            println!("");
+            println!();
 
             // Check if xmake is installed
             let check_installed = std::process::Command::new("xmake")
@@ -154,7 +154,7 @@ pub fn install_env(env: &str) {
         }
         "CUDA" => {
             Logger::info("Checking if CUDA Toolkit is already installed...");
-            println!("");
+            println!();
 
             // Check if cuda toolkit is installed
             let check_installed = std::process::Command::new("nvcc")
@@ -208,7 +208,7 @@ pub fn install_env(env: &str) {
                 );
             }
 
-            println!("");
+            println!();
             Logger::warning(
                 "Please visit https://developer.nvidia.com/cuda-toolkit-archive to select and download the appropriate CUDA version for your driver.",
             );
@@ -218,7 +218,7 @@ pub fn install_env(env: &str) {
                 "The current automatic installation script only supports OpenCL installation for Intel CPU on Windows or Ubuntu systems.",
             );
             Logger::info("Checking if OpenCL is already installed...");
-            println!("");
+            println!();
 
             // Check if OpenCL is installed
             #[cfg(target_os = "windows")]
