@@ -4,3 +4,6 @@
 [submodule "exercises/rustlings"]
 	path = exercises/rustlings
 	url = https://github.com/wawahejun/rustlings-completed-version
+[submodule "exercises/learning-cxx"]
+	path = exercises/learning-cxx
+	url = https://github.com/wawahejun/learning-cxx
