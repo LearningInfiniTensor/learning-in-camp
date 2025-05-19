@@ -294,10 +294,10 @@ impl EvalArgs {
                     
                     println!("{} {}", "\n评测课程:".blue().bold(), course_name);
                     
-                    let (results, succeeds, failures, exercations) = if course_name == "learning-lm-rs" {
-                        self.eval_learning_lm(&path)?
-                    } else {
-                        self.eval_rustlings(&path)?
+                    let (results, succeeds, failures, exercations) = match course_name {
+                        "learning-lm-rs" => self.eval_learning_lm(&path)?,
+                        "learning-cxx" => self.eval_learning_cxx(&path)?,
+                        _ => self.eval_rustlings(&path)?
                     };
                     
                     exercise_results.extend(results);
@@ -344,13 +344,8 @@ impl EvalArgs {
             },
         };
 
-        // 确定结果文件名
-        let result_filename = if let Some(course) = &self.course {
-            format!("{}_result.json", course)
-        } else {
-            "eval_result.json".to_string()
-        };
-
+        // 使用固定的结果文件名
+        let result_filename = "eval_result.json";
         let json_result = serde_json::to_string_pretty(&result)?;
         fs::write(&result_filename, json_result)?;
         println!("");

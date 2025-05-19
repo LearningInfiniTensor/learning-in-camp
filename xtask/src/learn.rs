@@ -1,4 +1,4 @@
-﻿use anyhow::{Context, Result};
+use anyhow::{Context, Result};
 use clap::Args;
 use colored::*;
 use std::fs;
