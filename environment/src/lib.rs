@@ -1,7 +1,21 @@
+use colored::*;
+
+pub fn info(msg: &str) {
+    println!("{} {}", "[xtask]".green().bold(), msg);
+}
+
+pub fn error(msg: &str) {
+    println!("{} {}", "[xtask]".red().bold(), msg);
+}
+
+pub fn warning(msg: &str) {
+    println!("{} {}", "[xtask]".yellow().bold(), msg);
+}
+
 pub fn install_env(env: &str) {
     match env {
         "Python" => {
-            println!("\x1b[32m[xtask]\x1b[0m Checking if Python is already installed...");
+            info("Checking if Python is already installed...");
             println!();
 
             // Check if python or python3 is installed
@@ -22,15 +36,11 @@ pub fn install_env(env: &str) {
             };
 
             if check_installed {
-                println!(
-                    "\x1b[32m[xtask]\x1b[0m Python is already installed. No need to reinstall."
-                );
+                info("Python is already installed. No need to reinstall.");
                 return;
             }
 
-            println!(
-                "\x1b[32m[xtask]\x1b[0m Python not detected. Installing Python environment..."
-            );
+            info("Python not detected. Installing Python environment...");
 
             #[cfg(target_os = "windows")]
             let output = std::process::Command::new("powershell")
@@ -76,30 +86,26 @@ pub fn install_env(env: &str) {
                         .arg("brew install python")
                         .status()
                 } else {
-                    println!(
-                        "\x1b[31m[xtask]\x1b[0m No supported package manager found (apt-get, dnf, yum, pacman). Please install Python manually."
+                    error(
+                        "No supported package manager found (apt-get, dnf, yum, pacman). Please install Python manually.",
                     );
                     return;
                 }
             };
 
             match output {
-                Ok(status) if status.success() => {
-                    println!("\x1b[32m[xtask]\x1b[0m Python installation completed!")
-                }
-                Ok(status) => {
-                    println!(
-                        "\x1b[31m[xtask]\x1b[0m Python installation failed, exit code: {:?}",
-                        status.code()
-                    )
-                }
-                Err(e) => println!(
-                    "\x1b[31m[xtask]\x1b[0m Error occurred while running install command: {e}"
-                ),
+                Ok(status) if status.success() => info("Python installation completed!"),
+                Ok(status) => error(&format!(
+                    "Python installation failed, exit code: {:?}",
+                    status.code()
+                )),
+                Err(e) => error(&format!(
+                    "Error occurred while running install command: {e}"
+                )),
             }
         }
         "xmake" => {
-            println!("\x1b[32m[xtask]\x1b[0m Checking if xmake is already installed...");
+            info("Checking if xmake is already installed...");
             println!();
 
             // Check if xmake is installed
@@ -111,13 +117,11 @@ pub fn install_env(env: &str) {
                 .unwrap_or(false);
 
             if check_installed {
-                println!(
-                    "\x1b[32m[xtask]\x1b[0m xmake is already installed. No need to reinstall."
-                );
+                info("xmake is already installed. No need to reinstall.");
                 return;
             }
 
-            println!("\x1b[32m[xtask]\x1b[0m xmake not detected. Installing xmake environment...");
+            info("xmake not detected. Installing xmake environment...");
 
             #[cfg(target_os = "windows")]
             let output = std::process::Command::new("powershell")
@@ -134,20 +138,18 @@ pub fn install_env(env: &str) {
                 .status();
 
             match output {
-                Ok(status) if status.success() => {
-                    println!("\x1b[32m[xtask]\x1b[0m xmake installation completed!")
-                }
-                Ok(status) => println!(
-                    "\x1b[31m[xtask]\x1b[0m xmake installation failed, exit code: {:?}",
+                Ok(status) if status.success() => info("xmake installation completed!"),
+                Ok(status) => error(&format!(
+                    "xmake installation failed, exit code: {:?}",
                     status.code()
-                ),
-                Err(e) => println!(
-                    "\x1b[31m[xtask]\x1b[0m Error occurred while running install command: {e}"
-                ),
+                )),
+                Err(e) => error(&format!(
+                    "Error occurred while running install command: {e}"
+                )),
             }
         }
         "CUDA" => {
-            println!("\x1b[32m[xtask]\x1b[0m Checking if CUDA Toolkit is already installed...");
+            info("Checking if CUDA Toolkit is already installed...");
             println!();
 
             // Check if cuda toolkit is installed
@@ -159,9 +161,7 @@ pub fn install_env(env: &str) {
                 .unwrap_or(false);
 
             if check_installed {
-                println!(
-                    "\x1b[32m[xtask]\x1b[0m CUDA Toolkit is already installed. No need to reinstall."
-                );
+                info("CUDA Toolkit is already installed. No need to reinstall.");
                 return;
             }
 
@@ -179,7 +179,7 @@ pub fn install_env(env: &str) {
                 let smi_info = String::from_utf8_lossy(&output.stdout);
                 for line in smi_info.lines() {
                     if line.contains("CUDA Version") {
-                        println!("\x1b[32m[xtask]\x1b[0m Detected by nvidia-smi: {line}");
+                        info(&format!("Detected by nvidia-smi: {line}"));
                     }
                     if let Some(idx) = line.find("CUDA Version:") {
                         // extract the CUDA version number
@@ -187,33 +187,33 @@ pub fn install_env(env: &str) {
                             .split_whitespace()
                             .next()
                             .unwrap_or("");
-                        println!(
-                            "\x1b[32m[xtask]\x1b[0m The highest CUDA version supported by your driver is {version_str}"
-                        );
-                        println!(
-                            "\x1b[33m[xtask]\x1b[0m You can also visit https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html to find the CUDA version compatible with your GPU driver."
+                        info(&format!(
+                            "The highest CUDA version supported by your driver is {version_str}"
+                        ));
+                        warning(
+                            "You can also visit https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html to find the CUDA version compatible with your GPU driver.",
                         );
                     }
                 }
-                println!(
-                    "\x1b[32m[xtask]\x1b[0m Please make sure to install a CUDA Toolkit version compatible with your driver."
+                info(
+                    "Please make sure to install a CUDA Toolkit version compatible with your driver.",
                 );
             } else {
-                println!(
-                    "\x1b[31m[xtask]\x1b[0m nvidia-smi not found. Please make sure you have an NVIDIA GPU and drivers installed."
+                error(
+                    "nvidia-smi not found. Please make sure you have an NVIDIA GPU and drivers installed.",
                 );
             }
 
             println!();
-            println!(
-                "\x1b[33m[xtask]\x1b[0m Please visit https://developer.nvidia.com/cuda-toolkit-archive to select and download the appropriate CUDA version for your driver."
+            warning(
+                "Please visit https://developer.nvidia.com/cuda-toolkit-archive to select and download the appropriate CUDA version for your driver.",
             );
         }
         "OpenCL" => {
-            println!(
-                "\x1b[32m[xtask]\x1b[0m The current automatic installation script only supports OpenCL installation for Intel CPU on Windows or Ubuntu systems."
+            info(
+                "The current automatic installation script only supports OpenCL installation for Intel CPU on Windows or Ubuntu systems.",
             );
-            println!("\x1b[32m[xtask]\x1b[0m Checking if OpenCL is already installed...");
+            info("Checking if OpenCL is already installed...");
             println!();
 
             // Check if OpenCL is installed
@@ -221,16 +221,16 @@ pub fn install_env(env: &str) {
             {
                 let clinfo_path = std::path::Path::new("clinfo.exe");
                 if !clinfo_path.exists() {
-                    println!("\x1b[32m[xtask]\x1b[0m Downloading clinfo tool...");
+                    info("Downloading clinfo tool...");
                     let download_status = std::process::Command::new("curl")
                         .args(["-o", "clinfo.exe", "https://github.com/ahoylabs/clinfo/releases/download/master-d2baa06/clinfo.exe"])
                         .status();
 
                     if let Err(e) = download_status {
-                        println!("\x1b[31m[xtask]\x1b[0m Failed to download clinfo: {}", e);
-                        println!("\x1b[33m[xtask]\x1b[0m You may need to enable proxy.");
-                        println!(
-                            "\x1b[33m[xtask]\x1b[0m You can also manually download from https://github.com/ahoylabs/clinfo/releases/download/master-d2baa06/clinfo.exe"
+                        error(&format!("Failed to download clinfo: {}", e));
+                        warning("You may need to enable proxy.");
+                        warning(
+                            "You can also manually download from https://github.com/ahoylabs/clinfo/releases/download/master-d2baa06/clinfo.exe",
                         );
                         return;
                     }
@@ -247,21 +247,19 @@ pub fn install_env(env: &str) {
                 {
                     if let Some(number) = line.split_whitespace().last() {
                         if number == "0" {
-                            println!("\x1b[32m[xtask]\x1b[0m OpenCL is not installed.");
+                            info("OpenCL is not installed.");
                         } else {
-                            println!(
-                                "\x1b[32m[xtask]\x1b[0m OpenCL is installed. Number of platforms: {}",
+                            info(&format!(
+                                "OpenCL is installed. Number of platforms: {}",
                                 number
-                            );
+                            ));
                             return;
                         }
                     } else {
-                        println!("\x1b[31m[xtask]\x1b[0m Failed to parse the number of platforms.");
+                        error("Failed to parse the number of platforms.");
                     }
                 } else {
-                    println!(
-                        "\x1b[31m[xtask]\x1b[0m Failed to find 'Number of platforms' in clinfo output."
-                    );
+                    error("Failed to find 'Number of platforms' in clinfo output.");
                 }
             }
             #[cfg(not(target_os = "windows"))]
@@ -278,20 +276,18 @@ pub fn install_env(env: &str) {
 
                 if !has_cmd("clinfo") {
                     if has_cmd("apt") {
-                        println!("\x1b[32m[xtask]\x1b[0m Installing clinfo tool...");
+                        info("Installing clinfo tool...");
                         let install_status = std::process::Command::new("sh")
                             .arg("-c")
                             .arg("sudo apt update && sudo apt install opencl-headers ocl-icd-opencl-dev -y")
                             .status();
 
                         if let Err(e) = install_status {
-                            println!("\x1b[31m[xtask]\x1b[0m Failed to install clinfo: {}", e);
+                            error(&format!("Failed to install clinfo: {}", e));
                             return;
                         }
                     } else {
-                        println!(
-                            "\x1b[31m[xtask]\x1b[0m Unsupported package manager. Please install clinfo manually."
-                        );
+                        error("Unsupported package manager. Please install clinfo manually.");
                         return;
                     }
                 }
@@ -307,27 +303,23 @@ pub fn install_env(env: &str) {
                 {
                     if let Some(number) = line.split_whitespace().last() {
                         if number == "0" {
-                            println!("\x1b[32m[xtask]\x1b[0m OpenCL is not installed.");
+                            info("OpenCL is not installed.");
                         } else {
-                            println!(
-                                "\x1b[32m[xtask]\x1b[0m OpenCL is installed. Number of platforms: {}",
+                            info(&format!(
+                                "OpenCL is installed. Number of platforms: {}",
                                 number
-                            );
+                            ));
                             return;
                         }
                     } else {
-                        println!("\x1b[31m[xtask]\x1b[0m Failed to parse the number of platforms.");
+                        error("Failed to parse the number of platforms.");
                     }
                 } else {
-                    println!(
-                        "\x1b[31m[xtask]\x1b[0m Failed to find 'Number of platforms' in clinfo output."
-                    );
+                    error("Failed to find 'Number of platforms' in clinfo output.");
                 }
             }
 
-            println!(
-                "\x1b[32m[xtask]\x1b[0m OpenCL not detected. Installing OpenCL environment..."
-            );
+            info("OpenCL not detected. Installing OpenCL environment...");
 
             #[cfg(target_os = "windows")]
             {
@@ -336,19 +328,19 @@ pub fn install_env(env: &str) {
                     .status();
 
                 if let Err(e) = download_status {
-                    println!(
-                        "\x1b[31m[xtask]\x1b[0m Failed to download w_opencl_runtime_p_2025.1.0.972: {}",
+                    error(&format!(
+                        "Failed to download w_opencl_runtime_p_2025.1.0.972: {}",
                         e
-                    );
-                    println!("\x1b[33m[xtask]\x1b[0m You may need to enable proxy.");
-                    println!(
-                        "\x1b[33m[xtask]\x1b[0m You can also manually download from https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b6dccdb7-b503-41ea-bd4b-a78e9c2d8dd6/w_opencl_runtime_p_2025.1.0.972.exe"
+                    ));
+                    warning("You may need to enable proxy.");
+                    warning(
+                        "You can also manually download from https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b6dccdb7-b503-41ea-bd4b-a78e9c2d8dd6/w_opencl_runtime_p_2025.1.0.972.exe",
                     );
                     return;
                 }
 
-                println!(
-                    "\x1b[33m[xtask]\x1b[0m Download completed. Please manually execute 'w_opencl_runtime_p_2025.1.0.972.exe' to install OpenCL for Intel CPU."
+                warning(
+                    "Download completed. Please manually execute 'w_opencl_runtime_p_2025.1.0.972.exe' to install OpenCL for Intel CPU.",
                 );
             }
             #[cfg(not(target_os = "windows"))]
@@ -364,18 +356,18 @@ pub fn install_env(env: &str) {
                 };
 
                 if has_cmd("apt") {
-                    println!("\x1b[32m[xtask]\x1b[0m Installing opencl-headers...");
+                    info("Installing opencl-headers...");
                     let install_status = std::process::Command::new("sh")
                         .arg("-c")
                         .arg("sudo apt update && sudo apt install opencl-headers ocl-icd-opencl-dev -y")
                         .status();
 
                     if let Err(e) = install_status {
-                        println!("\x1b[31m[xtask]\x1b[0m Failed to install OpenCL: {}", e);
+                        error(&format!("Failed to install OpenCL: {}", e));
                         return;
                     }
 
-                    println!("\x1b[32m[xtask]\x1b[0m Installing Intel OpenCL runtime...");
+                    info("Installing Intel OpenCL runtime...");
                     let setup_status = std::process::Command::new("sh")
                         .arg("-c")
                         .arg(
@@ -387,31 +379,24 @@ pub fn install_env(env: &str) {
                         .status();
 
                     if let Err(e) = setup_status {
-                        println!(
-                            "\x1b[31m[xtask]\x1b[0m Failed to set up Intel OpenCL repository: {}",
-                            e
-                        );
+                        error(&format!("Failed to set up Intel OpenCL repository: {}", e));
                         return;
                     }
 
-                    println!(
-                        "\x1b[33m[xtask]\x1b[0m Intel OpenCL runtime installation requires a proxy and may take time."
+                    warning(
+                        "Intel OpenCL runtime installation requires a proxy and may take time.",
                     );
-                    println!(
-                        "\x1b[33m[xtask]\x1b[0m Please manually execute the following command after enabling the proxy:"
+                    warning(
+                        "Please manually execute the following command after enabling the proxy:",
                     );
-                    println!(
-                        "\x1b[33m[xtask]\x1b[0m sudo apt install -y intel-oneapi-runtime-opencl"
-                    );
+                    warning("sudo apt install -y intel-oneapi-runtime-opencl");
                 } else {
-                    println!(
-                        "\x1b[31m[xtask]\x1b[0m Unsupported package manager. Please install OpenCL manually."
-                    );
+                    error("Unsupported package manager. Please install OpenCL manually.");
                 }
             }
         }
-        _ => println!(
-            "\x1b[31m[xtask]\x1b[0m Automatic installation for this environment is not supported: {env}"
-        ),
+        _ => error(&format!(
+            "Automatic installation for this environment is not supported: {env}"
+        )),
     }
 }
