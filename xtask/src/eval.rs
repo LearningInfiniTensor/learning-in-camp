@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Instant;
+use tempfile;
 
 #[derive(Args)]
 pub struct EvalArgs {
@@ -195,6 +196,53 @@ impl EvalArgs {
 
     /// 评测rustlings或其他项目
     fn eval_rustlings(&self, course_path: &Path) -> Result<(Vec<ExerciseResult>, usize, usize, usize)> {
+        println!("{}", "评测 rustlings 项目...".blue().bold());
+        
+        // 检查是否存在 rustlings 命令
+        let rustlings_check = Command::new("rustlings")
+            .arg("--help")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output();
+            
+        // 无论 rustlings 命令是否存在，都使用 rustc 编译和运行测试来评测
+        println!("{}", "使用 rustc 编译和运行测试来评测...".blue().bold());
+        
+        // 处理 Rustlings 或其他非 learning-lm-rs 项目
+        let exercise_files = find_exercise_files(course_path, &None)?;
+        let total_exercations = exercise_files.len();
+        println!("{} {} {}", "找到".blue().bold(), total_exercations, "个练习文件".blue().bold());
+
+        if total_exercations == 0 {
+            println!("{}", "未找到练习文件，评测结束。".yellow());
+            return Ok((Vec::new(), 0, 0, 0));
+        }
+
+        let bar = ProgressBar::new(total_exercations as u64);
+        bar.set_style(
+            ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})")
+                .unwrap()
+                .progress_chars("##-"),
+        );
+
+        let mut exercise_results = Vec::new();
+        let mut total_succeeds = 0;
+        let mut total_failures = 0;
+        
+        for exercise_path in exercise_files.iter() {
+            bar.inc(1);
+            let (name, result, _time) = grade_exercise(exercise_path, self.verbose)?;
+            if result {
+                total_succeeds += 1;
+            } else {
+                total_failures += 1;
+            }
+            exercise_results.push(ExerciseResult { name, result });
+        }
+        bar.finish_with_message("评测完成!");
+        
+        return Ok((exercise_results, total_succeeds, total_failures, total_exercations));
+        
         // 处理 Rustlings 或其他非 learning-lm-rs 项目
         let exercise_files = find_exercise_files(&course_path, &None)?;
         let total_exercations = exercise_files.len();
@@ -465,6 +513,63 @@ fn grade_exercise(exercise_path: &Path, verbose: bool) -> Result<(String, bool, 
         .to_string();
 
     println!("{} {}", "评测练习:".blue().bold(), exercise_name);
+
+    // 检查是否是 clippy 练习
+    let is_clippy_exercise = exercise_path.to_string_lossy().contains("clippy");
+
+    // 如果是 clippy 练习，使用 cargo clippy 命令检查
+    if is_clippy_exercise {
+        // 创建一个临时目录来存放 Cargo.toml 和源文件
+        let temp_dir = tempfile::tempdir().context("创建临时目录失败")?;
+        let temp_dir_path = temp_dir.path();
+        
+        // 创建 Cargo.toml 文件
+        let cargo_toml_content = r#"[package]
+name = "clippy_check"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "clippy_check"
+path = "src/main.rs"
+"#;
+        let cargo_toml_path = temp_dir_path.join("Cargo.toml");
+        fs::write(&cargo_toml_path, cargo_toml_content).context("写入 Cargo.toml 失败")?;
+        
+        // 创建 src 目录
+        let src_dir = temp_dir_path.join("src");
+        fs::create_dir(&src_dir).context("创建 src 目录失败")?;
+        
+        // 复制练习文件到 src/main.rs
+        let exercise_content = fs::read_to_string(exercise_path).context("读取练习文件失败")?;
+        let main_rs_path = src_dir.join("main.rs");
+        fs::write(&main_rs_path, exercise_content).context("写入 main.rs 失败")?;
+        
+        // 运行 cargo clippy
+        let clippy_output = Command::new("cargo")
+            .arg("clippy")
+            .arg("--manifest-path")
+            .arg(&cargo_toml_path)
+            .arg("--")
+            .arg("-D")
+            .arg("warnings")
+            .current_dir(temp_dir_path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .context(format!("运行 cargo clippy 检查 {} 失败", exercise_name))?;
+        
+        let clippy_success = clippy_output.status.success();
+        
+        if !clippy_success {
+            if verbose {
+                println!("{}", String::from_utf8_lossy(&clippy_output.stdout));
+                println!("{}", String::from_utf8_lossy(&clippy_output.stderr));
+            }
+            println!("{} {}", "✗".red().bold(), exercise_name);
+            return Ok((exercise_name, false, start.elapsed().as_secs()));
+        }
+    }
 
     // 对于rustlings练习，直接使用rustc编译和运行测试
     let test_output = Command::new("rustc")
