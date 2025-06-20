@@ -1,4 +1,5 @@
 use colored::*;
+use std::io::{self, Write};
 
 pub fn info(msg: &str) {
     println!("{} {}", "[xtask]".green().bold(), msg);
@@ -202,6 +203,7 @@ pub fn install_env(env: &str) {
                 error(
                     "nvidia-smi not found. Please make sure you have an NVIDIA GPU and drivers installed.",
                 );
+                return;
             }
 
             println!();
@@ -210,9 +212,20 @@ pub fn install_env(env: &str) {
             );
         }
         "OpenCL" => {
-            info(
+            warning(
                 "The current automatic installation script only supports OpenCL installation for Intel CPU on Windows or Ubuntu systems.",
             );
+            warning("type 'y' to continue, or any other key to exit.");
+            let mut input = String::new();
+            io::stdout().flush().unwrap();
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read input");
+            if input.trim().to_lowercase() != "y" {
+                info("Exiting OpenCL installation.");
+                return;
+            }
+
             info("Checking if OpenCL is already installed...");
             println!();
 
@@ -257,9 +270,11 @@ pub fn install_env(env: &str) {
                         }
                     } else {
                         error("Failed to parse the number of platforms.");
+                        return;
                     }
                 } else {
                     error("Failed to find 'Number of platforms' in clinfo output.");
+                    return;
                 }
             }
             #[cfg(not(target_os = "windows"))]
@@ -279,7 +294,7 @@ pub fn install_env(env: &str) {
                         info("Installing clinfo tool...");
                         let install_status = std::process::Command::new("sh")
                             .arg("-c")
-                            .arg("sudo apt update && sudo apt install opencl-headers ocl-icd-opencl-dev -y")
+                            .arg("sudo apt update && sudo apt install clinfo -y")
                             .status();
 
                         if let Err(e) = install_status {
@@ -313,9 +328,11 @@ pub fn install_env(env: &str) {
                         }
                     } else {
                         error("Failed to parse the number of platforms.");
+                        return;
                     }
                 } else {
                     error("Failed to find 'Number of platforms' in clinfo output.");
+                    return;
                 }
             }
 
