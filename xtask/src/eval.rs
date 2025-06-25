@@ -198,53 +198,11 @@ impl EvalArgs {
     fn eval_rustlings(&self, course_path: &Path) -> Result<(Vec<ExerciseResult>, usize, usize, usize)> {
         println!("{}", "评测 rustlings 项目...".blue().bold());
         
-        // 检查是否存在 rustlings 命令
-        let rustlings_check = Command::new("rustlings")
-            .arg("--help")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output();
-            
-        // 无论 rustlings 命令是否存在，都使用 rustc 编译和运行测试来评测
+        // 使用 rustc 编译和运行测试来评测
         println!("{}", "使用 rustc 编译和运行测试来评测...".blue().bold());
         
         // 处理 Rustlings 或其他非 learning-lm-rs 项目
         let exercise_files = find_exercise_files(course_path, &None)?;
-        let total_exercations = exercise_files.len();
-        println!("{} {} {}", "找到".blue().bold(), total_exercations, "个练习文件".blue().bold());
-
-        if total_exercations == 0 {
-            println!("{}", "未找到练习文件，评测结束。".yellow());
-            return Ok((Vec::new(), 0, 0, 0));
-        }
-
-        let bar = ProgressBar::new(total_exercations as u64);
-        bar.set_style(
-            ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})")
-                .unwrap()
-                .progress_chars("##-"),
-        );
-
-        let mut exercise_results = Vec::new();
-        let mut total_succeeds = 0;
-        let mut total_failures = 0;
-        
-        for exercise_path in exercise_files.iter() {
-            bar.inc(1);
-            let (name, result, _time) = grade_exercise(exercise_path, self.verbose)?;
-            if result {
-                total_succeeds += 1;
-            } else {
-                total_failures += 1;
-            }
-            exercise_results.push(ExerciseResult { name, result });
-        }
-        bar.finish_with_message("评测完成!");
-        
-        return Ok((exercise_results, total_succeeds, total_failures, total_exercations));
-        
-        // 处理 Rustlings 或其他非 learning-lm-rs 项目
-        let exercise_files = find_exercise_files(&course_path, &None)?;
         let total_exercations = exercise_files.len();
         println!("{} {} {}", "找到".blue().bold(), total_exercations, "个练习文件".blue().bold());
 
@@ -403,31 +361,10 @@ impl EvalArgs {
     }
 }
 
-/// 查找 learning-lm-rs 项目的根目录
-fn find_learning_lm_root(start_path: &Path) -> Result<PathBuf> {
-    // First, check if the provided path exists
-    if !start_path.exists() {
-        return Err(anyhow::anyhow!("提供的路径不存在: {}", start_path.display()));
-    }
-    // Canonicalize the starting path to resolve any relative components
-    let mut current_path = start_path
-        .canonicalize()
-        .with_context(|| format!("无法规范化路径: {}", start_path.display()))?;
-    loop {
-        if current_path.join("Cargo.toml").exists() && current_path.file_name().map_or(false, |name| name == "learning-lm-rs") {
-            return Ok(current_path);
-        }
-        if let Some(parent) = current_path.parent() {
-            current_path = parent.to_path_buf();
-        } else {
-            break;
-        }
-    }
-    Err(anyhow::anyhow!("找不到 learning-lm-rs 项目根目录"))
-}
+
 
 /// 查找指定目录下的所有练习文件
-fn find_exercise_files(course_path: &Path, course: &Option<String>) -> Result<Vec<PathBuf>> {
+fn find_exercise_files(course_path: &Path, _course: &Option<String>) -> Result<Vec<PathBuf>> {
     let mut exercise_files = Vec::new();
     
     if !course_path.exists() {
