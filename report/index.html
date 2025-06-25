@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>训练营项目报告</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="logo">训练营项目</div>
+        <ul>
+            <li><a href="#usage">使用说明</a></li>
+            <li><a href="#extension">扩展指南</a></li>
+            <li><a href="#features">技术特点</a></li>
+        </ul>
+    </nav>
+    <header>
+        <h1>训练营项目产品手册</h1>
+        <p>一个用于管理和评测编程练习的基于Rust的工具</p>
+    </header>
+    <main>
+        <section id="usage">
+            <h2><span class="icon">🚀</span> 产品使用说明</h2>
+            <p>本工具提供了一套命令行接口，用于管理和评测不同课程的练习。</p>
+            <h3>配置新课程</h3>
+            <p>使用 <code>learn</code> 命令来克隆和配置一个新的课程仓库作为 git submodule。</p>
+            <pre><code>cargo xtask learn --course &lt;课程名称&gt; --submodule &lt;课程仓库Git地址&gt;</code></pre>
+            <p>例如，要配置一个名为 `my-rust-course` 的课程，可以运行：</p>
+            <pre><code>cargo xtask learn --course my-rust-course --submodule https://github.com/user/my-rust-course.git</code></pre>
+            
+            <h3>评测练习</h3>
+            <p>使用 <code>eval</code> 命令来评测练习。可以评测所有课程，也可以指定单个课程。</p>
+            <p>评测所有课程：</p>
+            <pre><code>cargo xtask eval</code></pre>
+            <p>评测指定课程：</p>
+            <pre><code>cargo xtask eval --course &lt;课程名称&gt;</code></pre>
+            <p>评测结果将显示在终端，并保存到项目根目录下的 <code>eval_result.json</code> 文件中。</p>
+        </section>
+
+        <section id="extension">
+            <h2><span class="icon">🧩</span> 如何拓展新课程评测</h2>
+            <p>系统可以方便地扩展以支持新的课程类型。目前的实现支持 `learning-lm-rs`、`learning-cxx` 和其他基于 `rustlings` 的课程。</p>
+            <p>要添加对新课程类型的支持，需要修改 <code>xtask/src/eval.rs</code> 文件：</p>
+            <ol>
+                <li>在 <code>eval.rs</code> 中为你的新课程类型添加一个新的评测函数，例如 <code>eval_my_course(&self, course_path: &Path) -> Result&lt;(...)&gt;</code>。</li>
+                <li>
+                    在 <code>run_eval</code> 函数的 <code>match</code> 语句中，添加一个新的分支来调用你的评测函数。
+                    <pre><code>// in xtask/src/eval.rs, inside run_eval function
+let (results, succeeds, failures, exercations) = match course_name {
+    "learning-lm-rs" => self.eval_learning_lm(&path)?,
+    "learning-cxx" => self.eval_learning_cxx(&path)?,
+    "my-new-course" => self.eval_my_course(&path)?, // 添加新的分支
+    _ => self.eval_rustlings(&path)?
+};</code></pre>
+                </li>
+            </ol>
+            <p>新的评测函数需要实现具体的评测逻辑，例如运行测试、检查输出来确定练习的通过状态，并返回一个包含练习结果、成功数、失败数和总数的元组。</p>
+        </section>
+
+        <section id="features">
+            <h2><span class="icon">💡</span> 技术特点</h2>
+            <ul>
+                <li><strong>基于 Rust 构建:</strong> 核心工具链使用 Rust 编写，确保了高性能和内存安全。</li>
+                <li><strong>可扩展的评测引擎:</strong> 通过模块化的设计，可以轻松地为不同语言或框架的课程添加新的评测逻辑。</li>
+                <li><strong>命令行接口:</strong> 使用 <code>clap</code> 库提供清晰、易用的命令行接口。</li>
+                <li><strong>Git Submodule 集成:</strong> 课程作为 Git 子模块进行管理，方便版本控制和分发。</li>
+                <li><strong>结构化输出:</strong> 评测结果以 JSON 格式输出，方便与其他工具或系统集成。</li>
+            </ul>
+        </section>
+    </main>
+    <footer>
+        <p>报告生成于 &copy; 2025</p>
+    </footer>
+</body>
+</html>
